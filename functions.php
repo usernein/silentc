@@ -20,15 +20,17 @@ function mp() {
 }*/
 function mp($token, $basedir = '.') {
 	global $mp;
-	include_once ($basedir.'/madeline/madeline.php');
-	$settings = [
-		'app_info' => ['api_id' => 163474, 'api_hash' => 'ce8d0741f0cb0c8558e98334109126b4'],
-		'logger'   => ['logger' => 2, 'logger_param' => $basedir.'/madeline/silentc.log']
-	]; 
-	$is_logged = file_exists($basedir.'/madeline/silentc.sss');
-	$mp = new danog\MadelineProto\API($basedir.'/madeline/silentc.sss', $settings);
-	if (!$is_logged) {
-		$mp->bot_login($token);
+	if (!$mp) {
+		include_once ($basedir.'/madeline/madeline.php');
+		$settings = [
+			'app_info' => ['api_id' => 163474, 'api_hash' => 'ce8d0741f0cb0c8558e98334109126b4'],
+			'logger'   => ['logger' => 2, 'logger_param' => $basedir.'/madeline/silentc.log']
+		]; 
+		$is_logged = file_exists($basedir.'/madeline/silentc.sss');
+		$mp = new danog\MadelineProto\API($basedir.'/madeline/silentc.sss', $settings);
+		if (!$is_logged) {
+			$mp->bot_login($token);
+		}
 	}
 	return $mp;
 }

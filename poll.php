@@ -42,18 +42,17 @@ require 'functions/scrypt.php';
 $offset = 0;
 while (true) {
   echo "Running!\n";
-	$updates = $bot->getUpdates(['offset3' => $offset, 'timeout' => 300])['result']->asArray();
-	echo count($updates)."updates \n";
+	$updates = $bot->getUpdates(['offset' => $offset, 'timeout' => 300])['result']->asArray();
+	echo count($updates)."updates\n";
 	foreach ($updates as $update) {
 		$bot->setData($update);
 		$b = clone $bot;
 		$l = new Langs('strings/langs.json');
-		 try {
-  	      #if (@$_GET['beta']) if ($bot->UserID() && $bot->UserID() != 276145711) exit;
-	         handle($b, $l, $cfg);
-        } catch (Throwable $t) {
-          echo $t;
-       }
-		$offset = $update['update_id']+1;
+		try {
+	    	handle($b, $l, $cfg);
+		} catch (Throwable $t) {
+			echo $t;
 		}
+	$offset = $update['update_id']+1;
+	}
 }
