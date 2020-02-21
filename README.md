@@ -25,8 +25,9 @@ As i said i dislike the code and i got angry with PHP. I decided some important 
 # Requirements
 * Unix-like OS
 * PHP 7+ (i recommend to use the newer versions before 7.4)
-SilentC can run both in cli and web (even in webhosts).
-It also uses the awesome (but in PHP) library [MadelineProto](https://github.com/danog/MadelineProto), but it is downloaded and updated automatically. You don't have to care with it.
+
+- The awesome (but in PHP) library [MadelineProto](https://github.com/danog/MadelineProto), but it is downloaded and updated automatically. You don't have to care with it.
+- The included file `twig.phar` that is just the package of [Twig](https://twig.symfony.com) packed with [comphar](https://github.com/mpyw/comphar).
 
 # Cloning
 1. Put the files on your server
