@@ -43,7 +43,7 @@ $offset = 0;
 while (true) {
   echo "Running!\n";
 	$updates = $bot->getUpdates(['offset' => $offset, 'timeout' => 300])['result']->asArray();
-	echo count($updates)."updates\n";
+	echo count($updates)." updates\n";
 	foreach ($updates as $update) {
 		$bot->setData($update);
 		$b = clone $bot;
