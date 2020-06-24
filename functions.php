@@ -8,22 +8,13 @@ class MyPDO extends PDO {
 		$result = $this->query($query);
 		return $result? json($result->fetchColumn()) : $result;
 	}
-}/*
-function mp() {
-	global $mp;
-	include_once 'madeline/madeline.php';
-	$settings = [
-		'app_info' => ['api_id' => 163474, 'api_hash' => 'ce8d0741f0cb0c8558e98334109126b4'],
-		'logger'   => ['logger' => 2, 'logger_param' => 'madeline/silentc.log']
-	]; 
-	$mp = new danog\MadelineProto\API('madeline/silentc.sss', $settings);
-}*/
+}
 function mp($token, $basedir = '.') {
-	global $mp;
+	global $mp, $cfg;
 	if (!$mp) {
 		include_once ($basedir.'/madeline/madeline.php');
 		$settings = [
-			'app_info' => ['api_id' => 163474, 'api_hash' => 'ce8d0741f0cb0c8558e98334109126b4'],
+			'app_info' => ['api_id' => $cfg['api_id'], 'api_hash' => $cfg['api_hash']],
 			'logger'   => ['logger' => 2, 'logger_param' => $basedir.'/madeline/silentc.log']
 		]; 
 		$is_logged = file_exists($basedir.'/madeline/silentc.sss');
@@ -280,10 +271,10 @@ function setLanguage($user_id, $lang) {
 }
 function get_any_id(string $username) {
 	include_once 'madeline/madeline.php';
-	global $bt;
+	global $bt, $cfg;
 	if (!$bt) {
 		$settings = [
-			'app_info' => ['api_id' => 163474, 'api_hash' => 'ce8d0741f0cb0c8558e98334109126b4'],
+			'app_info' => ['api_id' => $cfg['api_id'], 'api_hash' => $cfg['api_hash']],
 			'logger'   => ['logger' => 2, 'logger_param' => 'madeline/silentc.log']
 		]; 
 		$bt = new danog\MadelineProto\API('madeline/silentc.sss', $settings);
@@ -301,10 +292,10 @@ function get_any_id(string $username) {
 }
 function get_id(string $username) {
 	include_once 'madeline/madeline.php';
-	global $bt;
+	global $bt, $cfg;
 	if (!$bt) {
 		$settings = [
-			'app_info' => ['api_id' => 163474, 'api_hash' => 'ce8d0741f0cb0c8558e98334109126b4'],
+			'app_info' => ['api_id' => $cfg['api_id'], 'api_hash' => $cfg['api_hash']],
 			'logger'   => ['logger' => 2, 'logger_param' => 'madeline/silentc.log']
 		]; 
 		$bt = new danog\MadelineProto\API('madeline/silentc.sss', $settings);
@@ -322,10 +313,10 @@ function get_id(string $username) {
 }
 function get_chat_id(string $username) {
 	include_once 'madeline/madeline.php';
-	global $bt;
+	global $bt, $cfg;
 	if (!$bt) {
 		$settings = [
-			'app_info' => ['api_id' => 163474, 'api_hash' => 'ce8d0741f0cb0c8558e98334109126b4'],
+			'app_info' => ['api_id' => $cfg['api_id'], 'api_hash' => $cfg['api_hash']],
 			'logger'   => ['logger' => 2, 'logger_param' => 'madeline/silentc.log']
 		]; 
 		$bt = new danog\MadelineProto\API('madeline/silentc.sss', $settings);
@@ -375,7 +366,7 @@ function delete($rule) {
 	#$db->query("INSERT INTO stats (id, date, rule) VALUES ({$chat}, {$time}, '{$rule}')");
 }
 function getAdmins(int $chat, $lang) {
-	global $db, $bot;
+	global $db, $bot, $cfg;
 	$mp_admins = json($db->querySingle("SELECT mp_admins FROM channel WHERE id={$chat}"));
 	if ($mp_admins && (time()-$mp_admins['time'] < 60)) return $mp_admins['admins'];
 	$bot->answer_callback($lang->updating_admin_list);
@@ -383,7 +374,7 @@ function getAdmins(int $chat, $lang) {
 	try {
 		include_once 'madeline/madeline.php';
 		$settings = [
-			'app_info' => ['api_id' => 163474, 'api_hash' => 'ce8d0741f0cb0c8558e98334109126b4'],
+			'app_info' => ['api_id' => $cfg['api_id'], 'api_hash' => $cfg['api_hash']],
 			'logger'   => ['logger' => 2, 'logger_param' => 'madeline/silentc.log'],
 			//'peer'     => ['cache_all_peers_on_startup' => true],
 		];
