@@ -9,6 +9,8 @@ $cfg = [
 	'sudoers' => [
 		276145711,
 	],
+	'api_id' => 123456,
+	'api_hash' => 'change-to-yours',
 ];
 
 # User that will receive the error reports
