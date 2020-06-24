@@ -1,22 +1,24 @@
 <?php
-use function \phgram\{ikb, hide_kb, kb};
+use function \usernein\phgram\{ikb, hide_kb, kb};
 function handle ($bot, $lang, $cfg) {
-  $db = new MyPDO('sqlite:silentc.db');
-$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
-$db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-$db->setAttribute(PDO::ATTR_TIMEOUT, 15);
+    $db = new MyPDO('sqlite:silentc.db');
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
+    $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $db->setAttribute(PDO::ATTR_TIMEOUT, 15);
 
-
-	$data = $bot->data;
-	$type = array_keys($data)[1];
-	$data = array_values($data)[1];
-	$chat_id = $bot->ChatID() ?? 000;
+	$update = $bot->update;
+	if (!$update) return $bot->logger->notice('Empty update');
+	$type = $update->update_type;
+	$data = $update();
+	
+	$chat_id = $update->ChatID;
+	if (!$chat_id) $chat_id = 0;
 	$channel_exists = $db->querySingle("SELECT 1 FROM channel WHERE id={$chat_id}");
 	
 
 	if ($channel_exists) {
 		$message_id = @$data['message_id'];
-		if (!$message_id) return;
+		if (!$message_id) return $bot->logger->notice("Empty message_id");
 		
 		$channel = $db->query("SELECT * FROM channel WHERE id={$chat_id}")->fetch();
 		$timers = json($channel['timers']);
@@ -187,13 +189,13 @@ $db->setAttribute(PDO::ATTR_TIMEOUT, 15);
 			$keyb = ikb([
 				[['a', 'a']],
 			]);
-			$args = ['chat_id' => $bot->ChatID(), 'message_id' => $bot->MessageID(), 'reply_markup' => $keyb];
+			$args = ['chat_id' => $update->ChatID, 'message_id' => $update->MessageID, 'reply_markup' => $keyb];
 			
 			$jso = json_encode($args, 480);
 			#$bot->log($jso);
 			$try = $bot->editMessageReplyMarkup($args);
 			#
-			mp($bot->bot_token);
+			mp($bot->BOT_TOKEN);
 			global $mp;
 			$keyb = [
 				'_' => 'replyInlineMarkup',
@@ -242,8 +244,8 @@ $db->setAttribute(PDO::ATTR_TIMEOUT, 15);
 			$debug = json($twig['debug']);
 			$old_tdb = $tdb = unserialize($twig['db']);
 			$old_db = json_encode($tdb, 480);
-			$text = $bot->Text() ?? $bot->Caption() ?? '';
-			$entities = $bot->Entities() ?? [];
+			$text = $update->text ?? $update->caption ?? '';
+			$entities = $update->Entities ?? [];
 			if ($entities instanceof ArrayObj) {
 				$entities = $entities->asArray();
 			}
@@ -264,9 +266,12 @@ $db->setAttribute(PDO::ATTR_TIMEOUT, 15);
 			$loader = new \Twig\Loader\ArrayLoader([
 				$id => $twig['template'],
 			]);
+			
+			
 
 			$twigh = new \Twig\Environment($loader, ['autoescape' => false]);
 			$twigh->addExtension(new \Twig\Extension\DebugExtension());
+			$twigh->addFilter(new \Twig\TwigFilter('md5', 'md5'));
 			$twigh->addExtension(getSandbox());
 			#$template = $twigh->createTemplate($twig['template'], $chat_id.'.twig');
 			
@@ -286,7 +291,7 @@ $db->setAttribute(PDO::ATTR_TIMEOUT, 15);
 			$is_duplicated = (@$data['author_signature'] && in_array(@$data['author_signature'], $dup_adms));
 			$args = [
 				'db' => &$tdb,
-				'update' => $bot->data,
+				'update' => $bot->update->raw,
 				'message' => $data,
 				'user_channels' => $user_channels,
 				'user_channel' => $user_channel,
@@ -348,6 +353,7 @@ $db->setAttribute(PDO::ATTR_TIMEOUT, 15);
 				$twigh = new \Twig\Environment($loader, ['debug' => true, 'autoescape' => false]);
 				$twigh->addExtension(new \Twig\Extension\DebugExtension());
 				$twigh->addExtension(getSandbox());
+				$twigh->addFilter(new \Twig\TwigFilter('md5', 'md5'));
 				#$template = $twigh->createTemplate($twig['template'], $chat_id.'.twig');
 				
 				unset($args['db']);
@@ -366,7 +372,7 @@ $db->setAttribute(PDO::ATTR_TIMEOUT, 15);
 						} else {
 							$str .= "\n• <b>{$lang->database}:</b> <pre>{$old_db}</pre>\n• {$lang->twig_db_unchanged}";
 						}
-						$dump = json_encode($bot->data, 480);
+						$dump = json_encode($bot->update->raw, 480);
 						$str .= "\n• <b>Update:</b>\n<pre>{$dump}</pre>";
 						$keyb = ikb([
 							[[$lang->back_twig, "twig $chat_id"]]
@@ -537,10 +543,10 @@ $db->setAttribute(PDO::ATTR_TIMEOUT, 15);
 				}
 				$keyb[] = [[($info['username']? '@'.$info['username'] : $info['title']), "open {$channel['id']}"], [($channel['switch'] ? '🔥' : '…'), "switch {$channel['id']}"]];
 			}
-			if ($keyb == [] || $bot->update_type == 'message') {
+			if ($keyb == [] || $update->update_type == 'message') {
 				$keyb[] = [[$lang->add_channel, 'add_channel']];
 			}
-			if ($bot->update_type == 'callback_query') $keyb[] = [[$lang->back, 'start_menu']];
+			if ($update->update_type == 'callback_query') $keyb[] = [[$lang->back, 'start_menu']];
 			$keyb = ikb($keyb);
 			@$bot->act($lang->control_menu, ['reply_markup' => $keyb]);
 			$db->commit();
@@ -1765,7 +1771,7 @@ WHERE id={$channel['id']}");
 			$del = @$bot->delete($message_id, $chat_id);
 			if ($del->ok) {
 				post_deleted:
-				$text = \phgram\entities_to_html($bot->Text(), $bot->Entities()->asArray());
+				$text = \phgram\entities_to_html($update->text, $update->Entities->asArray());
 				$text .= "\n\n✅ ".$lang->post_deleted;
 				$bot->edit($text);
 			} else {
@@ -1787,12 +1793,13 @@ WHERE id={$channel['id']}");
 	}
 	
 	else if ($type == 'message') {
-		$text = $bot->Text();
+		$text = $update->text;
 		$chat_id = $data['chat']['id'];
+		$chat = $data['chat'];
 		$user_id = $data['from']['id'];
 		$type = $data['chat']['type'];
 		$message_id = $data['message_id'];
-		$replied = $bot->ReplyToMessage();
+		$replied = $update->reply_to_message;
 		
 		$lang = setLanguage($user_id, $lang);
 		setTimezone($user_id);
@@ -1800,12 +1807,12 @@ WHERE id={$channel['id']}");
 		text_checks:
 		
 		if ($type != 'private') {
-			if ($text == '/connect' || $text == '/connect@silentgbot') {
+			if ($text == '/connect' || $text == '/connect@silentcbot') {
 				if (!$bot->is_admin($user_id, $chat_id)) {
 					return @$bot->delete();
 				} else if (!$bot->getChatMember(['chat_id' => $chat_id, 'user_id' => $bot->getMe()['id']])['can_delete_messages']) {
-					return $bot->reply($lang->connect_permissions_error);
-				} else if ($db->querySingle("SELECT 1 FROM channel WHERE id={$chat['id']}")) {
+					return $update->reply($lang->connect_permissions_error);
+				} else if ($db->querySingle("SELECT 1 FROM channel WHERE id={$chat_id}")) {
 					$adm = array_keys(json($db->querySingle("SELECT adm FROM channel WHERE id={$chat_id}")))[0];
 					if ($adm == $user_id) {
 						$keyb = ikb([
@@ -1822,11 +1829,13 @@ WHERE id={$channel['id']}");
 					$adms = [$user_id => ['sudo' => true, 'inviter' => $user_id]];
 					$adms = json($adms);
 					$time = time();
-					if ($db->query("INSERT INTO channel (id, adm, date) VALUES ({$chat_id}, '{$adms}', {$time})")) {
+					if ($db->query("INSERT INTO 
+channel (id, adm, date, timers, fixed_timers, block, patterns, blocklist, info, whitelist, mp_admins, twig)
+VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '[]', '[]', '[]')")) {
 						$bot->send(sprintf($lang->connect_success, $chat['title']));
 						$db->query("UPDATE user SET waiting_for='' WHERE id={$user_id}");
 					} else {
-						return $bot->reply($lang->connect_oops);
+						return $update->reply($lang->connect_oops);
 					}
 				}
 			}
@@ -1836,7 +1845,7 @@ WHERE id={$channel['id']}");
 					[['Start using the bot', 't.me/silentcbot', 'url']],
 					[['@hpxlist', 'https://t.me/joinchat/AAAAAEi56S9GuFH7EOAtzA', 'url']],
 				]);
-				$bot->reply("❕Unfortunately, at the moment this bot doesn't work on groups. SilentC is a channel-only tool.
+				$update->reply("❕Unfortunately, at the moment this bot doesn't work on groups. SilentC is a channel-only tool.
 Use it in PM.", ['reply_markup' => $ikb]);
 			}*/ # i disabled it because i saw some groups getting spammed with this message (yes, i could have used leaveChat)
 		}
@@ -1936,7 +1945,7 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 					$keyb = ikb([
 						[[$lang->back, "patterns {$id} 0 0"]]
 					]);
-					$bot->reply($lang->pattern_added, ['reply_markup' => $keyb]);
+					$update->reply($lang->pattern_added, ['reply_markup' => $keyb]);
 					$db->query("UPDATE user SET waiting_for='', waiting_param='', waiting_back='' WHERE id={$user_id}");
 				}
 				ini_set('track_errors', 'off');
@@ -1956,7 +1965,7 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 				$keyb = ikb([
 					[[$lang->back, "blocklist {$id} 0 0"]]
 				]);
-				$bot->reply($lang->blocklist_added, ['reply_markup' => $keyb]);
+				$update->reply($lang->blocklist_added, ['reply_markup' => $keyb]);
 					
 				$db->query("UPDATE user SET waiting_for='', waiting_param='', waiting_back='' WHERE id={$user_id}");
 			} else if ($waiting_for == 'admin') {
@@ -1969,7 +1978,7 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 						$keyb = ikb([
 							[[$lang->cancel, 'cancel']]
 						]);
-						return $bot->reply($lang->invalid_admin_username, ['reply_markup' => $keyb]);
+						return $update->reply($lang->invalid_admin_username, ['reply_markup' => $keyb]);
 					}
 				} else if (preg_match('#^(?<id>\d+) (.+)$#', $text, $match)) {
 					$id = $match['id'];
@@ -1977,7 +1986,7 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 					$keyb = ikb([
 						[[$lang->cancel, 'cancel']]
 					]);
-					return $bot->reply($lang->add_admin_error, ['reply_markup' => $keyb]);
+					return $update->reply($lang->add_admin_error, ['reply_markup' => $keyb]);
 				}
 				
 				if (!$bot->is_admin($id, $param)) {
@@ -1994,7 +2003,7 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 					$keyb = ikb([
 						[[$lang->back, "admins {$param}"]]
 					]);
-					$bot->reply($lang->admin_added, ['reply_markup' => $keyb]);
+					$update->reply($lang->admin_added, ['reply_markup' => $keyb]);
 					
 					$adms = $db->querySingle("SELECT adm FROM channel WHERE id={$param}");
 					$adms = json($adms);
@@ -2065,7 +2074,7 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 					[[$lang->apply, "import {$match['file_id']} {$match['id']}"], [$lang->cancel, "cancel_import {$match['id']}"]]
 				]);
 				
-				$bot->reply($reply, ['reply_markup' => $keyb]);
+				$update->reply($reply, ['reply_markup' => $keyb]);
 				$db->query("UPDATE user SET waiting_for='', waiting_param='', waiting_back='' WHERE id={$user_id}");
 			} else if ($waiting_for == 'region') {
 				$timezones = json(file_get_contents('functions/timezones.json'));
@@ -2196,6 +2205,7 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 				$twig = new \Twig\Environment($loader, ['debug' => true]);
 				$twig->addExtension(new \Twig\Extension\DebugExtension());
 				$twig->addExtension(getSandbox());
+				$twig->addFilter(new \Twig\TwigFilter('md5', 'md5'));
 				try {
 					$inf = $bot->Chat($param);
 					$chmention = $inf['username'] ?? $param;
@@ -2205,7 +2215,7 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 				} catch (\Twig\Error\SyntaxError $e) {
 					$err = htmlspecialchars($e->getMessage());
 					$err = str_replace('&quot;'.$id.'&quot;', 'your template', $err);
-					return $bot->reply("❗{$lang->syntax_error}: <i>{$err}</i>");
+					return $update->reply("❗{$lang->syntax_error}: <i>{$err}</i>");
 					// $template contains one or more syntax errors
 				}
 				
@@ -2302,7 +2312,7 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 				]);
 				$bot->send($lang->basic_settings_alert, ['reply_markup' => $keyb]);
 				
-				$language = $bot->Language() ?: 'en';
+				$language = $update->Language ?: 'en';
 				$language = strtolower(str_replace(['-', '_'], '', $language));
 				$time = time();
 				$timezone = $language == 'ptbr'? 'America/Sao_Paulo' : 'UTC';
@@ -2375,9 +2385,9 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 					return $bot->send($lang->no_channels);
 				}
 				$keyb = ikb($keyb);
-				$bot->reply($reply, ['reply_markup' => $keyb]);
+				$update->reply($reply, ['reply_markup' => $keyb]);
 			} else {
-				$bot->reply($lang->invalid_import_file);
+				$update->reply($lang->invalid_import_file);
 			}
 		}
 		
@@ -2508,8 +2518,6 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 			else if (preg_match('#^/(\s+|ev(al)?\s+)(?<code>.+)#isu', $text, $match)) {
 				protect();
 				$bot->action();
-				\phgram\BotErrorHandler::$admin = $chat_id;
-				\phgram\BotErrorHandler::$verbose = true;
 				ob_start();
 				try {
 					eval($match['code']);
@@ -2519,7 +2527,7 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 				$out = ob_get_contents();
 				ob_end_clean();
 				if ($out) {
-					if (!(@$bot->sendMessage(['chat_id' => $chat_id, 'text' => $out, 'reply_to_message_id' => $bot->MessageID()])->ok)) {
+					if (!(@$bot->sendMessage(['chat_id' => $chat_id, 'text' => $out, 'reply_to_message_id' => $update->MessageID])->ok)) {
 						indoc($out);
 					}
 				}
@@ -2529,7 +2537,7 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 				$bot->action();
 				$id = $match['id'];
 				
-				mp($bot->bot_token);
+				mp($bot->BOT_TOKEN);
 				global $mp;
 				try {
 					$info = $mp->get_info($id);
@@ -2584,7 +2592,7 @@ VALUES ({$chat['id']}, '{$adms}', {$time}, '[]', '[]', '[]', '[]', '[]', '[]', '
 				$bot->action();
 				$id = $replied->forward_from->id ?? $replied->forward_from_chat->id ?? 0;
 				
-				mp($bot->bot_token);
+				mp($bot->BOT_TOKEN);
 				global $mp;
 				try {
 					$info = $mp->get_info($id);

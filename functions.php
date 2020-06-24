@@ -46,7 +46,7 @@ class MPSend {
 		$chat_id = null;
 		extract($params);
 		global $bot;
-		$chat_id = $chat_id ?? $bot->ChatID() ?? $bot->UserID();
+		$chat_id = $chat_id ?? $bot->update->ChatID ?? $bot->update->UserID;
 		
 		$name = basename($path);
 		$filesize = filesize($path);
@@ -225,7 +225,7 @@ function indoc($string) {
 }
 function protect() {
 	global $bot;
-	$protection = "{$bot->UpdateID()}.run";
+	$protection = "{$bot->update->update_id}.run";
 	if (!file_exists($protection)) file_put_contents($protection, '1');
 	else exit;
 	$protection = realpath($protection);
@@ -269,7 +269,7 @@ function getUsernames($message, $entities) {
 }
 function setLanguage($user_id, $lang) {
 	global $db, $bot;
-	$language = $db->querySingle("SELECT language FROM user WHERE id={$user_id}") ?: $bot->Language() ?? 'en';
+	$language = $db->querySingle("SELECT language FROM user WHERE id={$user_id}") ?: $bot->update->Language ?? 'en';
 	$language = strtolower(str_replace(['-', '_'], '', $language));
 	if (isset($lang->data->$language)) {
 		$lang->language = $language;
@@ -363,8 +363,8 @@ function dump($value) {
 }
 function delete($rule) {
 	global $bot;
-	$chat = $bot->ChatID();
-	$msg = $bot->MessageID();
+	$chat = $bot->update->ChatID;
+	$msg = $bot->update->message_id;
 	@$bot->deleteMessage(['chat_id' => $chat, 'message_id' => $msg]);
 	$str = "Deleting {$msg} in {$chat} for {$rule}";
 	if ($chat == -1001256087497) { // beta testing channel
@@ -511,6 +511,7 @@ function getSandbox() {
 		'last',
 		'length',
 		'lower',
+		'md5',
 		'merge',
 		'nl2br',
 		'number_format',

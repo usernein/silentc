@@ -13,8 +13,7 @@ if (!file_exists('madeline/madeline.php')) {
     copy('https://phar.madelineproto.xyz/madeline.php', 'madeline/madeline.php');
 }
 require 'phgram.phar';
-use \phgram\{Bot, BotErrorHandler, ArrayObj};
-use function \phgram\{ikb};
+use function \usernein\phgram\{ikb};
 require 'bot.php';
 require 'config.php';
 require 'lang.php';
@@ -22,12 +21,21 @@ require 'functions.php';
 require 'dbsetup.php';
 
 # Creating variables...
-$bot = new Bot(SILENTC_TOKEN, SILENTC_ADMIN);
-$bot->report_show_view = 1;
-$bot->report_show_data = 1;
-BotErrorHandler::register(SILENTC_TOKEN, SILENTC_ADMIN);
-BotErrorHandler::$verbose = false;
+class Bot extends \usernein\phgram\Bot {
+    public function act($text, array $params = []) {
+        $method = $this->update->update_type == 'callback_query'? 'edit' : 'send';
+        $this->$method($text, $params);
+    }
+}
+$bot = new Bot(SILENTC_TOKEN);
 $langs = new Langs('strings/langs.json');
+
+#Logging
+$handler = new \Monolog\Handler\TelegramBotHandler(SILENTC_TOKEN, SILENTC_ADMIN, \Monolog\Logger::NOTICE);
+$formatter = new \Monolog\Formatter\LineFormatter();
+$formatter->includeStacktraces();
+$handler->setFormatter($formatter);
+if (file_exists('debugging')) $bot->logger->pushHandler($handler);
 
 #$db = new MyPDO('sqlite:silentc.db');
 $db = new MyPDO(...$db_data);
@@ -46,5 +54,5 @@ try {
 	#if (@$_GET['beta']) if ($bot->UserID() && $bot->UserID() != 276145711) exit;
 	handle($b, $l, $cfg);
 } catch (Throwable $t) {
-	echo $t;
+	$bot->logger->error($t);
 }

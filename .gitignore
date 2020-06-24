@@ -1,0 +1,8 @@
+_token
+madeline/
+*.log
+madeline.phar*
+phlog_error
+*.db
+*.sqlite
+*.zip
