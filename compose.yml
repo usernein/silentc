@@ -1,0 +1,9 @@
+services:
+  bot:
+    image: php:7.2-apache
+    volumes:
+      - .:/var/www/html
+    ports:
+      - 38090:80
+    command: apache2-foreground
+    restart: unless-stopped
