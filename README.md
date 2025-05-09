@@ -5,7 +5,7 @@ Source code of the bot t.me/silentcbot on Telegram.
 [SilentC](https://t.me/silentcbot) is a Telegram bot launched in the beginning of 2018. It's intended to help channels owners to manage the posts of their channels. SilentC delete unwanted posts using the rules you define (rules based in the post time, type and content). You can even use regular expressions (RegEx) and Twig templates to create advanced filters.
 
 # About the code
-I won't lie: i actually dislike it. It's ok about indentation and style, but it's in PHP (don't be offended, i'm just angry and sad with PHP).
+I don't like it.
 
 Well i don't dislike the code only due to its language (if i did, it would be a kinda futile reason), there's a list of simple things that you should know:
 * I didn't use prepared statements in whole code. There's shameful string interpolations in almost all queries. At least i use PDO.
@@ -17,16 +17,18 @@ Some people might say "Hey, but it's your own code! How can you hate it?". I don
 
 See, i started learning PHP at the beginning of December, 2017 (i started before with Python, in April, 2017). SilentC initially was just a bot for praticing, but the beta bot became a bit "famous" in just some days.
 
-I was starting with PHP. I had a lot of bad pratices that actually i don't have anymore (the biggest one is to use PHP kek). I started to develop SilentC 2 years ago and after i rewrited it 2 times, but now it became too big and i'm tired of rewriting in PHP.
+I was starting with PHP. I had a lot of bad pratices that actually i don't have anymore. I started to develop SilentC 2 years ago and after i rewrited it 2 times, but now it became too big and i'm tired of rewriting in PHP.
 
 ## "Why are you publishing the source now?"
-As i said i dislike the code and i got angry with PHP. I decided some important things that will definitely make the SilentC's future better. One of them is to make the bot open source.
+As i said i dislike the code and i got angry with it. I decided some important things that will definitely make the SilentC's future better. One of them is to make the bot open source.
+
+2024/2025 update: i don't have problems with PHP anymore. I used to have when i migrated to Python. Now that i also met many other languages, i don't really care about the language, as the quality can be guaranteed by the dev anyways. The language doesn't matter: the dev does.
 
 # Requirements
 * Unix-like OS
 * PHP 7+ (i recommend to use the newer versions before 7.4)
 
-- The awesome (but in PHP) library [MadelineProto](https://github.com/danog/MadelineProto), but it is downloaded and updated automatically. You don't have to care with it.
+- The awesome library [MadelineProto](https://github.com/danog/MadelineProto), but it is downloaded and updated automatically. You don't have to care with it.
 - The included file `twig.phar` that is just the package of [Twig](https://twig.symfony.com) packed with [comphar](https://github.com/mpyw/comphar).
 
 # Cloning
